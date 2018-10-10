@@ -20,9 +20,11 @@ io.on('connection', (socket) => {
     });
 
     socket.on('createMessage', (message) => {
-        var now = Date.now();
-        message['createdAt'] = now;
-        socket.emit('newMessage', message);
+        io.emit('newMessage', {
+            from: message.from,
+            text: message.text,
+            createdAt: new Date().getTime()
+        });
     });
 });
 
