@@ -28,8 +28,9 @@ io.on('connection', (socket) => {
         text: "New User Connected.",
         createdAt: new Date().getTime()
     });
-    socket.on('createMessage', (message) => {
+    socket.on('createMessage', (message, callback) => {
         io.emit('newMessage', generateMessage(message.from, message.text));
+        callback(message);
     });
 });
 
