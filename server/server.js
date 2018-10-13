@@ -14,31 +14,44 @@ const io = socketIO(server);
 const {generateMessage, generateLocationMessage} = require('./utils/message');
 const {isRealString} = require('./utils/validation');
 
+const {Users} = require('./utils/users');
+const users = new Users();
+
 app.use(express.static(publicPath));
 
 io.on('connection', (socket) => {
     socket.on('disconnect', () => {
-        socket.broadcast.emit('newMessage', generateMessage("Admin", "A User Disconnected."));
+        const user = users.removeUser(socket.id);
+        io.to(user.room).emit('updateUserList', users.getUserList(user.room));
+        io.to(user.room).emit('newMessage', generateMessage("Admin", `${user.name} has left the room.`));
     });
-
-    socket.emit('newMessage', generateMessage("Admin", "Welcome to the chat app"));
-    socket.broadcast.emit('newMessage', generateMessage("Admin", "New User Connected."));
 
     socket.on('join', (params, callback) => {
        if(!isRealString(params.name) || !isRealString(params.room)) {
            callback('Name and Room are required.');
        } else {
+           socket.join(params.room);
+           users.removeUser(socket.id);
+           users.addUser(socket.id, params.name, params.room);
+
+           io.to(params.room).emit('updateUserList', users.getUserList(params.room));
+
+           socket.emit('newMessage', generateMessage("Admin", "Welcome to the chat app"));
+           socket.broadcast.to(params.room).emit('newMessage', generateMessage("Admin", `${params.name} has joined room.`));
+
            callback();
        }
     });
 
     socket.on('createMessage', (message, callback) => {
-        io.emit('newMessage', generateMessage(message.from, message.text));
+        const instance = users.getUser(socket.id);
+        io.to(instance.room).emit('newMessage', generateMessage(message.from, message.text));
         callback(message);
     });
 
     socket.on('createLocationMessage', (coords) => {
-        io.emit('newLocationMessage', generateLocationMessage('Admin', coords.latitude, coords.longitude));
+        const instance = users.getUser(socket.id);
+        io.to(instance.room).emit('newLocationMessage', generateLocationMessage('Admin', coords.latitude, coords.longitude));
     });
 });
 

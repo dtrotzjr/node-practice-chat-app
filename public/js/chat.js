@@ -34,6 +34,19 @@ socket.on('disconnect', function () {
     console.log('Disconnected from server');
 });
 
+socket.on('updateUserList', function (userNames) {
+    const usersListElement = jQuery('<ol></ol>');
+
+    userNames.forEach(function (name){
+        const template = jQuery('#user-template').html();
+        const html = Mustache.render(template, {
+            name
+        });
+        usersListElement.append(html);
+    });
+    jQuery('#users').html(usersListElement);
+});
+
 socket.on('newMessage', function (message) {
     const formattedTime = moment(message.createdAt).format('h:mm a');
     const template = jQuery('#message-template').html();
