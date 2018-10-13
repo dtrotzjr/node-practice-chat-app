@@ -45,13 +45,19 @@ io.on('connection', (socket) => {
 
     socket.on('createMessage', (message, callback) => {
         const instance = users.getUser(socket.id);
-        io.to(instance.room).emit('newMessage', generateMessage(message.from, message.text));
-        callback(message);
+        if(instance && isRealString(message.text)) {
+            io.to(instance.room).emit('newMessage', generateMessage(instance.name, message.text));
+        }
+
+        callback();
     });
 
     socket.on('createLocationMessage', (coords) => {
         const instance = users.getUser(socket.id);
-        io.to(instance.room).emit('newLocationMessage', generateLocationMessage('Admin', coords.latitude, coords.longitude));
+        if(instance) {
+            io.to(instance.room).emit('newLocationMessage', generateLocationMessage(instance.name, coords.latitude, coords.longitude));
+        }
+
     });
 });
 
